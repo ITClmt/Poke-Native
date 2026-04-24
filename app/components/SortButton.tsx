@@ -124,10 +124,9 @@ const styles = StyleSheet.create({
     paddingLeft: 20,
   },
   card: {
-    paddingVertical: 16,
+    padding: 16,
     marginHorizontal: 2,
     gap: 16,
-    alignItems: "center",
     justifyContent: "center",
   },
 });
