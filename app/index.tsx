@@ -5,6 +5,7 @@ import Card from "./components/Card";
 import PokemonCard from "./components/pokemon/PokemonCard";
 import Row from "./components/Row";
 import SearchBar from "./components/SearchBar";
+import SortButton from "./components/SortButton";
 import ThemedText from "./components/ThemedText";
 import { getPokeminId } from "./function/pokemon";
 import { useInfiniteFetchQuery } from "./hooks/useFetchQuery";
@@ -16,15 +17,21 @@ export default function Index() {
     useInfiniteFetchQuery("/pokemon?limit=21");
 
   const [search, setSearch] = useState("");
+  const [sortKey, setSortKey] = useState<"id" | "name">("id");
 
-  const pokemons = data?.pages.flatMap((page) => page.results) ?? [];
-  const filteredPokemons = search
-    ? pokemons.filter(
-        (p) =>
-          p.name.toLowerCase().includes(search.toLowerCase()) ||
-          getPokeminId(p.url).toString() === search,
-      )
-    : pokemons;
+  const pokemons =
+    data?.pages.flatMap((page) =>
+      page.results.map((r) => ({ name: r.name, id: getPokeminId(r.url) })),
+    ) ?? [];
+  const filteredPokemons = [
+    ...(search
+      ? pokemons.filter(
+          (p) =>
+            p.name.toLowerCase().includes(search.toLowerCase()) ||
+            p.id.toString() === search,
+        )
+      : pokemons),
+  ].sort((a, b) => (a[sortKey] < b[sortKey] ? -1 : 1));
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.tint }]}>
@@ -38,8 +45,9 @@ export default function Index() {
           Pokedex
         </ThemedText>
       </Row>
-      <Row>
+      <Row gap={16} style={styles.form}>
         <SearchBar value={search} onChange={setSearch} />
+        <SortButton value={sortKey} onChange={setSortKey} />
       </Row>
       <Card style={styles.body}>
         <FlatList
@@ -53,12 +61,12 @@ export default function Index() {
           onEndReached={search ? undefined : () => fetchNextPage()}
           renderItem={({ item }) => (
             <PokemonCard
-              id={getPokeminId(item.url)}
+              id={item.id}
               name={item.name}
               style={{ flex: 1 / 3 }}
             />
           )}
-          keyExtractor={(item) => item.url}
+          keyExtractor={(item) => item.id.toString()}
         />
       </Card>
     </SafeAreaView>
@@ -83,5 +91,8 @@ const styles = StyleSheet.create({
   },
   list: {
     padding: 12,
+  },
+  form: {
+    paddingHorizontal: 12,
   },
 });
