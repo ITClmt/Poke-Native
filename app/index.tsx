@@ -1,13 +1,10 @@
-import {
-  ActivityIndicator,
-  FlatList,
-  Image,
-  StyleSheet,
-  View,
-} from "react-native";
+import { useState } from "react";
+import { ActivityIndicator, FlatList, Image, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Card from "./components/Card";
-import { PokemonCard } from "./components/pokemon/PokemonCard";
+import PokemonCard from "./components/pokemon/PokemonCard";
+import Row from "./components/Row";
+import SearchBar from "./components/SearchBar";
 import ThemedText from "./components/ThemedText";
 import { getPokeminId } from "./function/pokemon";
 import { useInfiniteFetchQuery } from "./hooks/useFetchQuery";
@@ -18,30 +15,42 @@ export default function Index() {
   const { data, isFetching, fetchNextPage } =
     useInfiniteFetchQuery("/pokemon?limit=21");
 
+  const [search, setSearch] = useState("");
+
   const pokemons = data?.pages.flatMap((page) => page.results) ?? [];
+  const filteredPokemons = search
+    ? pokemons.filter(
+        (p) =>
+          p.name.toLowerCase().includes(search.toLowerCase()) ||
+          getPokeminId(p.url).toString() === search,
+      )
+    : pokemons;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.tint }]}>
-      <View style={styles.header}>
+      <Row style={styles.header} gap={16}>
         <Image
           source={require("@/assets/images/pokeball.png")}
-          width={24}
-          height={24}
+          width={16}
+          height={16}
         />
         <ThemedText variant="headline" color="grayLight">
           Pokedex
         </ThemedText>
-      </View>
+      </Row>
+      <Row>
+        <SearchBar value={search} onChange={setSearch} />
+      </Row>
       <Card style={styles.body}>
         <FlatList
-          data={pokemons}
+          data={filteredPokemons}
           numColumns={3}
           columnWrapperStyle={[styles.gridGap, styles.list]}
           contentContainerStyle={styles.gridGap}
           ListFooterComponent={
             isFetching ? <ActivityIndicator color={colors.tint} /> : null
           }
-          onEndReached={() => fetchNextPage()}
+          onEndReached={search ? undefined : () => fetchNextPage()}
           renderItem={({ item }) => (
             <PokemonCard
               id={getPokeminId(item.url)}
@@ -62,14 +71,12 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
-    padding: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   body: {
     flex: 1,
-    padding: 12,
+    marginTop: 16,
   },
   gridGap: {
     gap: 8,
